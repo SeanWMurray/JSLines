@@ -117,11 +117,11 @@ class JSLines {
   _normalize(data) {
     if (!data || !data.length) return null;
     if (typeof data[0] === 'object') {
-      const arr = new Float64Array(data.length);
+      const arr = new Float32Array(data.length);
       for (let i = 0; i < data.length; i++) arr[i] = data[i].y;
       return arr;
     }
-    return data instanceof Float64Array ? data : new Float64Array(data);
+    return data instanceof Float32Array ? data : new Float32Array(data);
   }
 
   _calcMinMax(arr) {
@@ -164,41 +164,33 @@ class JSLines {
 
     if (this._opts.axes.show) this._drawAxes(ctx, w, h, pad, aw, ah, len);
 
-    // Build line path in one loop
-    ctx.beginPath();
+    // Build line path once via Path2D — reused for both fill and stroke
+    const linePath = new Path2D();
     for (let i = 0; i < len; i++) {
       const x = this._xAt(i, len, aw);
       const y = this._yAt(data[i], ah);
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      if (i === 0) linePath.moveTo(x, y);
+      else linePath.lineTo(x, y);
     }
 
     if (this._opts.fill) {
-      ctx.lineTo(pad.left + aw, pad.top + ah);
-      ctx.lineTo(pad.left, pad.top + ah);
-      ctx.closePath();
+      const fillPath = new Path2D(linePath);
+      fillPath.lineTo(pad.left + aw, pad.top + ah);
+      fillPath.lineTo(pad.left, pad.top + ah);
+      fillPath.closePath();
 
       const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + ah);
       grad.addColorStop(0, this._opts.fillColor);
       grad.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.fillStyle = grad;
-      ctx.fill();
-
-      // Redraw line on top of fill
-      ctx.beginPath();
-      for (let i = 0; i < len; i++) {
-        const x = this._xAt(i, len, aw);
-        const y = this._yAt(data[i], ah);
-        if (i === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
+      ctx.fill(fillPath);
     }
 
     ctx.strokeStyle = this._opts.lineColor;
     ctx.lineWidth = this._opts.lineWidth;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    ctx.stroke();
+    ctx.stroke(linePath);
 
     // Redraw hover dot if active
     if (this._hoverIdx >= 0) this._drawDot(this._hoverIdx, aw, ah);
@@ -244,8 +236,6 @@ class JSLines {
     }
 
     const ol = this._labelOverlay;
-    ol.innerHTML = '';
-
     const pad = this._pad;
     const w = this._w;
     const h = this._h;
@@ -257,6 +247,7 @@ class JSLines {
     const color = axes.labelColor || '#94a3b8';
     const ticks = axes.yTicks || 3;
 
+    const fragment = document.createDocumentFragment();
     const mkSpan = (text, left, top, extra) => {
       const s = document.createElement('span');
       s.style.cssText =
@@ -264,7 +255,7 @@ class JSLines {
       s.style.left = left + 'px';
       s.style.top = top + 'px';
       s.textContent = text;
-      ol.appendChild(s);
+      fragment.appendChild(s);
     };
 
     // Y labels
@@ -306,6 +297,9 @@ class JSLines {
       const lastText = xFmt(xLabels[len - 1], len - 1);
       mkSpan(lastText, lastX, h - pad.bottom + 4, 'transform:translateX(-50%);');
     }
+
+    ol.innerHTML = '';
+    ol.appendChild(fragment);
   }
 
   // ─── Hover ───────────────────────────────────────────────────────────────
@@ -328,7 +322,15 @@ class JSLines {
     this._el.appendChild(this._dot);
     this._dotCtx = this._dot.getContext('2d');
 
-    this._onMouseMove = e => this._handleMove(e);
+    this._ticking = false;
+    this._onMouseMove = e => {
+      if (this._ticking) return;
+      this._ticking = true;
+      requestAnimationFrame(() => {
+        this._handleMove(e);
+        this._ticking = false;
+      });
+    };
     this._onMouseLeave = () => this._handleLeave();
     this._canvas.addEventListener('mousemove', this._onMouseMove);
     this._canvas.addEventListener('mouseleave', this._onMouseLeave);
@@ -351,13 +353,8 @@ class JSLines {
     const aw = this._w - pad.left - pad.right;
     const len = data.length;
 
-    // Find nearest index
-    let nearest = 0, minDist = Infinity;
-    for (let i = 0; i < len; i++) {
-      const x = this._xAt(i, len, aw);
-      const d = Math.abs(mx - x);
-      if (d < minDist) { minDist = d; nearest = i; }
-    }
+    // O(1) index calculation — points are evenly spaced so no search needed
+    const nearest = Math.max(0, Math.min(len - 1, Math.round(((mx - pad.left) / aw) * (len - 1))));
 
     if (nearest === this._hoverIdx) return;
     this._hoverIdx = nearest;
@@ -478,5 +475,6 @@ class JSLines {
     this._dotCtx = null;
     this._labelOverlay = null;
     this._ro = null;
+    this._ticking = false;
   }
 }
