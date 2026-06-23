@@ -1,12 +1,12 @@
 # JSLines
 
-A lightweight, zero-dependency charting library for high-density dashboards. Built on the Canvas API — no SVG, no frameworks, no build step required.
+A lightweight, zero-dependency charting library for high-density dashboards. Built on the Canvas API, no SVG, no frameworks, no build step required.
 
 ![JSLines demo showing sparklines with axes, hover tooltips, and gradient fills](screenshots/screenshot1.png)
 
 ## Why
 
-Most charting libraries are built for one or two charts per page. When you need dozens rendering simultaneously — account balances, trend lines, working paper data — the DOM overhead of SVG-based libraries adds up fast. JSLines uses `<canvas>` directly, keeps allocations out of the render loop, and scales with `ResizeObserver` so layout changes don't trigger unnecessary redraws.
+Built to support another project. Most charting libraries are built for one or two charts per page. When you need dozens rendering simultaneously — account balances, trend lines, working paper data — the DOM overhead of SVG-based libraries adds up fast. JSLines uses `<canvas>` directly, keeps allocations out of the render loop, and scales with `ResizeObserver` so layout changes don't trigger unnecessary redraws.
 
 ## Installation
 
