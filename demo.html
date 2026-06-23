@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JSLines Demo</title>
+  <style>
+    body { font-family: sans-serif; background: #f8fafc; padding: 2rem; }
+    h1 { font-size: 1.25rem; color: #1e293b; margin-bottom: 1.5rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; }
+    .card label { display: block; font-size: 0.75rem; color: #64748b; margin-bottom: 0.5rem; }
+    .chart-host { height: 70px; }
+    .chart-host-tall { height: 130px; }
+    button { margin-top: 0.5rem; padding: 0.25rem 0.75rem; font-size: 0.8rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>JSLines — Vanilla JS Sparkline Demo</h1>
+  <div class="grid">
+
+    <div class="card">
+      <label>Basic line, no axes, no hover</label>
+      <div class="chart-host" id="c1"></div>
+    </div>
+
+    <div class="card">
+      <label>Hover enabled (dot + tooltip, value only)</label>
+      <div class="chart-host" id="c2"></div>
+    </div>
+
+    <div class="card">
+      <label>Fill + hover</label>
+      <div class="chart-host" id="c3"></div>
+    </div>
+
+    <div class="card">
+      <label>Axes with number labels + hover</label>
+      <div class="chart-host-tall" id="c4"></div>
+    </div>
+
+    <div class="card">
+      <label>Axes with custom yFormat ($) + hover</label>
+      <div class="chart-host-tall" id="c5"></div>
+    </div>
+
+    <div class="card">
+      <label>Axes with Date xLabels (auto-formatted) + hover</label>
+      <div class="chart-host-tall" id="c6"></div>
+    </div>
+
+    <div class="card">
+      <label>Axes with string xLabels + custom xFormat + hover</label>
+      <div class="chart-host-tall" id="c7"></div>
+    </div>
+
+    <div class="card">
+      <label>Live update + hover</label>
+      <div class="chart-host" id="c8"></div>
+      <button onclick="updateC8()">Randomize</button>
+    </div>
+
+    <div class="card">
+      <label>All-equal values edge case + hover</label>
+      <div class="chart-host" id="c9"></div>
+    </div>
+
+    <div class="card">
+      <label>100 points, thin line, hover</label>
+      <div class="chart-host" id="c10"></div>
+    </div>
+
+    <div class="card">
+      <label>Custom renderTooltip callback</label>
+      <div class="chart-host-tall" id="c11"></div>
+    </div>
+
+  </div>
+
+  <script src="jslines.js"></script>
+  <script>
+    const rand = n => Array.from({ length: n }, () => +(Math.random() * 1000 + 200).toFixed(2));
+    const dates = n => Array.from({ length: n }, (_, i) => {
+      const d = new Date(2024, 0, 1);
+      d.setDate(d.getDate() + i * 7);
+      return d;
+    });
+
+    new JSLines(document.getElementById('c1'), {
+      data: [1200, 1450, 1100, 1890, 1600, 1750],
+    });
+
+    new JSLines(document.getElementById('c2'), {
+      data: [1200, 1450, 1100, 1890, 1600, 1750],
+      hover: true,
+    });
+
+    new JSLines(document.getElementById('c3'), {
+      data: rand(10),
+      fill: true,
+      hover: true,
+      lineColor: '#059669',
+      fillColor: 'rgba(5, 150, 105, 0.1)',
+    });
+
+    new JSLines(document.getElementById('c4'), {
+      data: rand(8),
+      hover: true,
+      axes: { show: true },
+    });
+
+    new JSLines(document.getElementById('c5'), {
+      data: rand(8),
+      hover: true,
+      lineColor: '#16a34a',
+      axes: {
+        show: true,
+        yFormat: v => '$' + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+      },
+    });
+
+    new JSLines(document.getElementById('c6'), {
+      data: rand(12),
+      hover: true,
+      fill: true,
+      fillColor: 'rgba(124, 58, 237, 0.08)',
+      lineColor: '#7c3aed',
+      axes: {
+        show: true,
+        xLabels: dates(12),
+        yFormat: v => '$' + Math.round(v).toLocaleString(),
+      },
+    });
+
+    new JSLines(document.getElementById('c7'), {
+      data: [420, 610, 580, 790, 720, 940, 880, 1010],
+      hover: true,
+      lineColor: '#0891b2',
+      axes: {
+        show: true,
+        xLabels: ['Q1 \'22', 'Q2 \'22', 'Q3 \'22', 'Q4 \'22', 'Q1 \'23', 'Q2 \'23', 'Q3 \'23', 'Q4 \'23'],
+        xFormat: lbl => lbl,
+        yFormat: v => v.toLocaleString(),
+      },
+    });
+
+    const c8 = new JSLines(document.getElementById('c8'), {
+      data: rand(10),
+      hover: true,
+      fill: true,
+      lineColor: '#dc2626',
+      fillColor: 'rgba(220, 38, 38, 0.08)',
+    });
+    function updateC8() { c8.update(rand(10)); }
+
+    new JSLines(document.getElementById('c9'), {
+      data: [500, 500, 500, 500, 500],
+      hover: true,
+      lineColor: '#f59e0b',
+    });
+
+    new JSLines(document.getElementById('c10'), {
+      data: rand(100),
+      hover: true,
+      lineWidth: 1,
+    });
+
+    new JSLines(document.getElementById('c11'), {
+      data: rand(8),
+      hover: true,
+      lineColor: '#7c3aed',
+      fill: true,
+      fillColor: 'rgba(124,58,237,0.08)',
+      axes: {
+        show: true,
+        xLabels: dates(8),
+      },
+      renderTooltip: (value, xLabel, index) => {
+        const date = xLabel instanceof Date
+          ? xLabel.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+          : (xLabel || '');
+        return `<div style="background:#7c3aed;color:#fff;font:12px sans-serif;padding:5px 10px;border-radius:6px;box-shadow:0 2px 6px rgba(0,0,0,.25)">
+          <div style="font-size:10px;opacity:.8">${date}</div>
+          <div style="font-weight:600">$${value.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+          <div style="font-size:10px;opacity:.7">Point #${index + 1}</div>
+        </div>`;
+      },
+    });
+  </script>
+</body>
+</html>
